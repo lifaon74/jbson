@@ -1,29 +1,50 @@
 export type Pointer = number;
 export type GetPointerFunction = () => Pointer;
 
-export enum ANY_TYPES {
-  UNDEFINED = 0x00,
-  NULL = 0x01,
-  BOOLEAN = 0x02,
-  NUMBER = 0x03,
-  STRING = 0x04,
-  SYMBOL = 0x05,
-  BOOLEAN_OBJECT = 0x06,
-  NUMBER_OBJECT = 0x07,
-  STRING_OBJECT = 0x08,
-  DATE = 0x09,
-  REGEXP = 0x0a,
-  SHARED_ARRAY_BUFFER = 0x0b,
-  ARRAY_BUFFER = 0x0c,
-  ARRAY_BUFFER_VIEW = 0x0d,
-  MAP = 0x0e,
-  SET = 0x0f,
-  ARRAY = 0x10,
-  OBJECT = 0x11,
-  BIGINT = 0x12,
+export const ANY_UNDEFINED = 0x00;
+export const ANY_NULL = 0x01;
+export const ANY_BOOLEAN = 0x02;
+export const ANY_NUMBER = 0x03;
+export const ANY_STRING = 0x04;
+export const ANY_SYMBOL = 0x05;
+export const ANY_BOOLEAN_OBJECT = 0x06;
+export const ANY_NUMBER_OBJECT = 0x07;
+export const ANY_STRING_OBJECT = 0x08;
+export const ANY_DATE = 0x09;
+export const ANY_REGEXP = 0x0a;
+export const ANY_SHARED_ARRAY_BUFFER = 0x0b;
+export const ANY_ARRAY_BUFFER = 0x0c;
+export const ANY_ARRAY_BUFFER_VIEW = 0x0d;
+export const ANY_MAP = 0x0e;
+export const ANY_SET = 0x0f;
+export const ANY_ARRAY = 0x10;
+export const ANY_OBJECT = 0x11;
+export const ANY_BIGINT = 0x12;
+export const ANY_POINTER = 0x7f;
 
-  POINTER = 0x7f,
-}
+export type TAny =
+  typeof ANY_UNDEFINED
+  | typeof ANY_NULL
+  | typeof ANY_BOOLEAN
+  | typeof ANY_NUMBER
+  | typeof ANY_STRING
+  | typeof ANY_SYMBOL
+  | typeof ANY_BOOLEAN_OBJECT
+  | typeof ANY_NUMBER_OBJECT
+  | typeof ANY_STRING_OBJECT
+  | typeof ANY_DATE
+  | typeof ANY_REGEXP
+  | typeof ANY_SHARED_ARRAY_BUFFER
+  | typeof ANY_ARRAY_BUFFER
+  | typeof ANY_ARRAY_BUFFER_VIEW
+  | typeof ANY_MAP
+  | typeof ANY_SET
+  | typeof ANY_ARRAY
+  | typeof ANY_OBJECT
+  | typeof ANY_BIGINT
+  | typeof ANY_POINTER
+;
+
 
 export function IsPlainObject(value: any): boolean {
   if ((value === null) || (typeof value !== 'object')) {

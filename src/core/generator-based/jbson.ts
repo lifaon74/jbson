@@ -1,11 +1,13 @@
 import {
-  ArrayBufferViewToNumberType, GetNumberInDataView, InferNumberTypeOfNumber,
-  NUMBER_TYPES,
-  NumberTypeByteLength,
-  NumberTypeToArrayBufferViewConstructor, SetNumberInDataView
+  ArrayBufferViewToNumberType, GetNumberInDataView, InferNumberTypeOfNumber, NumberTypeByteLength,
+  NumberTypeToArrayBufferViewConstructor, SetNumberInDataView, TNumberType
 } from '../number';
-import { ANY_TYPES, GetPointerFunction, IsPlainObject, Pointer, textDecoder, textEncoder } from '../helpers';
-
+import {
+  ANY_ARRAY, ANY_ARRAY_BUFFER, ANY_ARRAY_BUFFER_VIEW, ANY_BIGINT, ANY_BOOLEAN, ANY_BOOLEAN_OBJECT, ANY_DATE, ANY_MAP,
+  ANY_NULL, ANY_NUMBER, ANY_NUMBER_OBJECT, ANY_OBJECT, ANY_POINTER, ANY_REGEXP, ANY_SET, ANY_SHARED_ARRAY_BUFFER,
+  ANY_STRING, ANY_STRING_OBJECT, ANY_UNDEFINED, GetPointerFunction, IsPlainObject, Pointer, tempUint8Array, textDecoder,
+  textEncoder
+} from '../helpers';
 
 
 // http://w3c.github.io/html/infrastructure.html#safe-passing-of-structured-data
@@ -84,7 +86,7 @@ const dataView = new DataView(new ArrayBuffer(8));
  * @param {number} type
  * @param {number} littleEndian
  */
-export function * EncodeTypedNumber(number: number, type: NUMBER_TYPES, littleEndian?: boolean): Generator<number, void, void> {
+export function * EncodeTypedNumber(number: number, type: TNumberType, littleEndian?: boolean): Generator<number, void, void> {
   SetNumberInDataView(number, type, dataView, 0, littleEndian);
   for (let i = 0, l = NumberTypeByteLength(type); i < l; i++) {
     yield dataView.getUint8(i);
@@ -96,7 +98,7 @@ export function * EncodeTypedNumber(number: number, type: NUMBER_TYPES, littleEn
  * @param type
  * @param littleEndian
  */
-export function * DecodeTypedNumber(type: NUMBER_TYPES, littleEndian?: boolean): Generator<void, number, number> {
+export function * DecodeTypedNumber(type: TNumberType, littleEndian?: boolean): Generator<void, number, number> {
   for (let i = 0, l = NumberTypeByteLength(type); i < l; i++) {
     dataView.setUint8(i, yield);
   }
@@ -104,13 +106,13 @@ export function * DecodeTypedNumber(type: NUMBER_TYPES, littleEndian?: boolean):
 }
 
 
-export function * EncodeNumberWithType(number: number, type: NUMBER_TYPES = InferNumberTypeOfNumber(number), littleEndian?: boolean): Generator<number, void, void> {
+export function * EncodeNumberWithType(number: number, type: TNumberType = InferNumberTypeOfNumber(number), littleEndian?: boolean): Generator<number, void, void> {
   yield type;
   yield * EncodeTypedNumber(number, type, littleEndian);
 }
 
 export function * DecodeNumberWithType(littleEndian?: boolean): Generator<void, number, number> {
-  const type: NUMBER_TYPES = yield;
+  const type: TNumberType = (yield) as TNumberType;
   return yield * DecodeTypedNumber(type, littleEndian);
 }
 
@@ -213,7 +215,7 @@ export function * EncodeArrayBufferView(buffer: ArrayBufferView): Generator<numb
 }
 
 export function * DecodeArrayBufferView(): Generator<void, ArrayBufferView, number> {
-  return new (NumberTypeToArrayBufferViewConstructor(yield))(yield * DecodeArrayBuffer());
+  return new (NumberTypeToArrayBufferViewConstructor((yield) as TNumberType))(yield * DecodeArrayBuffer());
 }
 
 
@@ -364,83 +366,83 @@ export function * EncodeAny(
   memory: Map<any, Pointer> = new Map<any, Pointer>()
 ): Generator<number, void, undefined> {
   if (memory.has(value)) {
-    yield ANY_TYPES.POINTER;
+    yield ANY_POINTER;
     yield * EncodePointer(memory.get(value) as Pointer);
   } else {
     const type: string = typeof value;
 
     // p4
     if (type === 'undefined') {
-      yield ANY_TYPES.UNDEFINED;
+      yield ANY_UNDEFINED;
 
     } else if (value === null) {
-      yield ANY_TYPES.NULL;
+      yield ANY_NULL;
 
     } else if (type === 'boolean') {
-      yield ANY_TYPES.BOOLEAN;
+      yield ANY_BOOLEAN;
       yield * EncodeBoolean(value);
 
     } else if (type === 'number') {
-      yield ANY_TYPES.NUMBER;
+      yield ANY_NUMBER;
       yield * EncodeNumber(value);
 
     } else if (type === 'string') {
-      yield ANY_TYPES.STRING;
+      yield ANY_STRING;
       yield * EncodeString(value);
 
     } else if (type === 'symbol') {  // p5
       throw new Error(`Value could not be cloned: ${ value.toString() } is a Symbol`);
 
     } else if (type === 'bigint') {
-      yield ANY_TYPES.BIGINT;
+      yield ANY_BIGINT;
       yield * EncodeBigInt(value);
 
     } else if (type === 'object') {
       memory.set(value, getPointer()); // p6 & p23
 
       if (value instanceof Boolean) { // p7
-        yield ANY_TYPES.BOOLEAN_OBJECT;
+        yield ANY_BOOLEAN_OBJECT;
         yield * EncodeBoolean(value.valueOf());
 
       } else if (value instanceof Number) { // p8
-        yield ANY_TYPES.NUMBER_OBJECT;
+        yield ANY_NUMBER_OBJECT;
         yield * EncodeNumber(value.valueOf());
 
       } else if (value instanceof String) { // p9
-        yield ANY_TYPES.STRING_OBJECT;
+        yield ANY_STRING_OBJECT;
         yield * EncodeString(value.valueOf());
 
       } else if (value instanceof Date) { // p10
-        yield ANY_TYPES.DATE;
+        yield ANY_DATE;
         yield * EncodeDate(value);
 
       } else if (value instanceof RegExp) { // p11
-        yield ANY_TYPES.REGEXP;
+        yield ANY_REGEXP;
         yield * EncodeRegExp(value);
 
       } else if ((typeof SharedArrayBuffer !== 'undefined') && (value instanceof SharedArrayBuffer)) { // p12.2
         // if(forStorage) throw new DataCloneError('Value could not be cloned: is a SharedArrayBuffer');
-        yield ANY_TYPES.SHARED_ARRAY_BUFFER;
+        yield ANY_SHARED_ARRAY_BUFFER;
         yield * EncodeArrayBuffer(value);
 
       } else if (value instanceof ArrayBuffer) { // p12.3
-        yield ANY_TYPES.ARRAY_BUFFER;
+        yield ANY_ARRAY_BUFFER;
         yield * EncodeArrayBuffer(value);
 
       } else if (ArrayBuffer.isView(value)) { // p13
-        yield ANY_TYPES.ARRAY_BUFFER_VIEW;
+        yield ANY_ARRAY_BUFFER_VIEW;
         yield * EncodeArrayBufferView(value);
 
       } else if (value instanceof Map) { // p14
-        yield ANY_TYPES.MAP;
+        yield ANY_MAP;
         yield * EncodeMap(value, getPointer, memory);
 
       } else if (value instanceof Set) { // p15
-        yield ANY_TYPES.SET;
+        yield ANY_SET;
         yield * EncodeSet(value, getPointer, memory);
 
       } else if (Array.isArray(value)) { // p16
-        yield ANY_TYPES.ARRAY;
+        yield ANY_ARRAY;
         yield * EncodeArray(value, getPointer, memory);
 
       } else if (!IsPlainObject(value)) { // p18
@@ -452,7 +454,7 @@ export function * EncodeAny(
         throw new TypeError(`Unsupported type : ${ string }`);
 
       } else {
-        yield ANY_TYPES.OBJECT;
+        yield ANY_OBJECT;
         yield * EncodeObject(value, getPointer, memory);
       }
     } else {
@@ -471,56 +473,56 @@ export function * DecodeAny(
   let value: any;
   switch (type) {
 
-    case ANY_TYPES.UNDEFINED:
+    case ANY_UNDEFINED:
       return void 0;
-    case ANY_TYPES.NULL:
+    case ANY_NULL:
       return null;
-    case ANY_TYPES.BOOLEAN:
+    case ANY_BOOLEAN:
       return yield * DecodeBoolean();
-    case ANY_TYPES.NUMBER:
+    case ANY_NUMBER:
       return yield * DecodeNumber();
-    case ANY_TYPES.STRING:
+    case ANY_STRING:
       return yield * DecodeString();
-    case ANY_TYPES.BIGINT:
+    case ANY_BIGINT:
       return yield * DecodeBigInt();
 
-    case ANY_TYPES.BOOLEAN_OBJECT:
+    case ANY_BOOLEAN_OBJECT:
       value = Boolean(yield * DecodeBoolean());
       break;
-    case ANY_TYPES.NUMBER_OBJECT:
+    case ANY_NUMBER_OBJECT:
       value = Number(yield * DecodeNumber());
       break;
-    case ANY_TYPES.STRING_OBJECT:
+    case ANY_STRING_OBJECT:
       value = String(yield * DecodeString());
       break;
-    case ANY_TYPES.DATE:
+    case ANY_DATE:
       value = yield * DecodeDate();
       break;
-    case ANY_TYPES.REGEXP:
+    case ANY_REGEXP:
       value = yield * DecodeRegExp();
       break;
-    case ANY_TYPES.SHARED_ARRAY_BUFFER:
+    case ANY_SHARED_ARRAY_BUFFER:
       value = yield * DecodeArrayBuffer();
       break;
-    case ANY_TYPES.ARRAY_BUFFER:
+    case ANY_ARRAY_BUFFER:
       value = yield * DecodeArrayBuffer();
       break;
-    case ANY_TYPES.ARRAY_BUFFER_VIEW:
+    case ANY_ARRAY_BUFFER_VIEW:
       value = yield * DecodeArrayBufferView();
       break;
-    case ANY_TYPES.MAP:
+    case ANY_MAP:
       value = yield * DecodeMap(getPointer, memory, pointer);
       break;
-    case ANY_TYPES.SET:
+    case ANY_SET:
       value = yield * DecodeSet(getPointer, memory, pointer);
       break;
-    case ANY_TYPES.ARRAY:
+    case ANY_ARRAY:
       value = yield * DecodeArray(getPointer, memory, pointer);
       break;
-    case ANY_TYPES.OBJECT:
+    case ANY_OBJECT:
       value = yield * DecodeObject(getPointer, memory, pointer);
       break;
-    case ANY_TYPES.POINTER:
+    case ANY_POINTER:
       const address: Pointer = yield * DecodePointer();
       if (memory.has(address)) {
         return memory.get(address);

@@ -1,10 +1,12 @@
 import {
-  ArrayBufferViewToNumberType,
-  GetNumberInDataView, InferNumberTypeOfNumber, NUMBER_TYPES, NumberTypeByteLength,
-  NumberTypeToArrayBufferViewConstructor, SetNumberInDataView
+  ArrayBufferViewToNumberType, GetNumberInDataView, InferNumberTypeOfNumber, NumberTypeByteLength,
+  NumberTypeToArrayBufferViewConstructor, SetNumberInDataView, TNumberType
 } from '../number';
 import {
-  ANY_TYPES, GetPointerFunction, IsPlainObject, Pointer, tempUint8Array, textDecoder, textEncoder
+  ANY_ARRAY, ANY_ARRAY_BUFFER, ANY_ARRAY_BUFFER_VIEW, ANY_BIGINT, ANY_BOOLEAN, ANY_BOOLEAN_OBJECT, ANY_DATE, ANY_MAP,
+  ANY_NULL, ANY_NUMBER, ANY_NUMBER_OBJECT, ANY_OBJECT, ANY_POINTER, ANY_REGEXP, ANY_SET, ANY_SHARED_ARRAY_BUFFER,
+  ANY_STRING, ANY_STRING_OBJECT, ANY_UNDEFINED, GetPointerFunction, IsPlainObject, Pointer, tempUint8Array, textDecoder,
+  textEncoder
 } from '../helpers';
 
 
@@ -141,7 +143,7 @@ export function DecodeBoolean(read: ReadFunction): boolean {
 const dataView = new DataView(new ArrayBuffer(8));
 
 export function EncodeNumber(number: number, write: WriteFunction): void {
-  const type: NUMBER_TYPES = InferNumberTypeOfNumber(number);
+  const type: TNumberType = InferNumberTypeOfNumber(number);
   write(type);
   SetNumberInDataView(number, type, dataView, 0, false);
   for (let i = 0, l = NumberTypeByteLength(type); i < l; i++) {
@@ -150,7 +152,7 @@ export function EncodeNumber(number: number, write: WriteFunction): void {
 }
 
 export function DecodeNumber(read: ReadFunction): number {
-  const type: NUMBER_TYPES = read();
+  const type: TNumberType = read() as TNumberType;
   for (let i = 0, l = NumberTypeByteLength(type); i < l; i++) {
     dataView.setUint8(i, read());
   }
@@ -255,7 +257,7 @@ export function EncodeArrayBufferView(buffer: ArrayBufferView, write: WriteFunct
 }
 
 export function DecodeArrayBufferView(read: ReadFunction): ArrayBufferView {
-  return new (NumberTypeToArrayBufferViewConstructor(read()))(DecodeArrayBuffer(read));
+  return new (NumberTypeToArrayBufferViewConstructor(read() as TNumberType))(DecodeArrayBuffer(read));
 }
 
 
@@ -419,7 +421,7 @@ export function EncodeAny(
   memory: Map<any, Pointer> = new Map<any, Pointer>()
 ): void {
   if (memory.has(value)) {
-    write(ANY_TYPES.POINTER);
+    write(ANY_POINTER);
     EncodePointer(memory.get(value) as Pointer, write);
   } else {
     if ((value !== null) && (value !== void 0) && (typeof value.toJBSON === 'function')) {
@@ -429,76 +431,76 @@ export function EncodeAny(
 
       // p4
       if (type === 'undefined') {
-        write(ANY_TYPES.UNDEFINED);
+        write(ANY_UNDEFINED);
 
       } else if (value === null) {
-        write(ANY_TYPES.NULL);
+        write(ANY_NULL);
 
       } else if (type === 'boolean') {
-        write(ANY_TYPES.BOOLEAN);
+        write(ANY_BOOLEAN);
         EncodeBoolean(value, write);
 
       } else if (type === 'number') {
-        write(ANY_TYPES.NUMBER);
+        write(ANY_NUMBER);
         EncodeNumber(value, write);
 
       } else if (type === 'string') {
-        write(ANY_TYPES.STRING);
+        write(ANY_STRING);
         EncodeString(value, write);
 
       } else if (type === 'symbol') {  // p5
         throw new Error(`Value could not be cloned: ${ value.toString() } is a Symbol`);
 
       } else if (type === 'bigint') {
-        write(ANY_TYPES.BIGINT);
+        write(ANY_BIGINT);
         EncodeBigInt(value, write);
 
       } else if (type === 'object') {
         memory.set(value, getPointer()); // p6 & p23
 
         if (value instanceof Boolean) { // p7
-          write(ANY_TYPES.BOOLEAN_OBJECT);
+          write(ANY_BOOLEAN_OBJECT);
           EncodeBoolean(value.valueOf(), write);
 
         } else if (value instanceof Number) { // p8
-          write(ANY_TYPES.NUMBER_OBJECT);
+          write(ANY_NUMBER_OBJECT);
           EncodeNumber(value.valueOf(), write);
 
         } else if (value instanceof String) { // p9
-          write(ANY_TYPES.STRING_OBJECT);
+          write(ANY_STRING_OBJECT);
           EncodeString(value.valueOf(), write);
 
         } else if (value instanceof Date) { // p10
-          write(ANY_TYPES.DATE);
+          write(ANY_DATE);
           EncodeDate(value, write);
 
         } else if (value instanceof RegExp) { // p11
-          write(ANY_TYPES.REGEXP);
+          write(ANY_REGEXP);
           EncodeRegExp(value, write);
 
         } else if ((typeof SharedArrayBuffer !== 'undefined') && (value instanceof SharedArrayBuffer)) { // p12.2
           // if(forStorage) throw new DataCloneError('Value could not be cloned: is a SharedArrayBuffer');
-          write(ANY_TYPES.SHARED_ARRAY_BUFFER);
+          write(ANY_SHARED_ARRAY_BUFFER);
           EncodeArrayBuffer(value, write);
 
         } else if (value instanceof ArrayBuffer) { // p12.3
-          write(ANY_TYPES.ARRAY_BUFFER);
+          write(ANY_ARRAY_BUFFER);
           EncodeArrayBuffer(value, write);
 
         } else if (ArrayBuffer.isView(value)) { // p13
-          write(ANY_TYPES.ARRAY_BUFFER_VIEW);
+          write(ANY_ARRAY_BUFFER_VIEW);
           EncodeArrayBufferView(value, write);
 
         } else if (value instanceof Map) { // p14
-          write(ANY_TYPES.MAP);
+          write(ANY_MAP);
           EncodeMap(value, write, getPointer, memory);
 
         } else if (value instanceof Set) { // p15
-          write(ANY_TYPES.SET);
+          write(ANY_SET);
           EncodeSet(value, write, getPointer, memory);
 
         } else if (Array.isArray(value)) { // p16
-          write(ANY_TYPES.ARRAY);
+          write(ANY_ARRAY);
           EncodeArray(value, write, getPointer, memory);
 
         } else if (!IsPlainObject(value)) { // p18
@@ -514,7 +516,7 @@ export function EncodeAny(
             throw new TypeError(`Unsupported type : ${ string }`);
           }
         } else {
-          write(ANY_TYPES.OBJECT);
+          write(ANY_OBJECT);
           EncodeObject(value, write, getPointer, memory);
         }
       } else {
@@ -535,56 +537,56 @@ export function DecodeAny(
   let value: any;
   switch (type) {
 
-    case ANY_TYPES.UNDEFINED:
+    case ANY_UNDEFINED:
       return void 0;
-    case ANY_TYPES.NULL:
+    case ANY_NULL:
       return null;
-    case ANY_TYPES.BOOLEAN:
+    case ANY_BOOLEAN:
       return DecodeBoolean(read);
-    case ANY_TYPES.NUMBER:
+    case ANY_NUMBER:
       return DecodeNumber(read);
-    case ANY_TYPES.STRING:
+    case ANY_STRING:
       return DecodeString(read);
-    case ANY_TYPES.BIGINT:
+    case ANY_BIGINT:
       return DecodeBigInt(read);
 
-    case ANY_TYPES.BOOLEAN_OBJECT:
+    case ANY_BOOLEAN_OBJECT:
       value = Boolean(DecodeBoolean(read));
       break;
-    case ANY_TYPES.NUMBER_OBJECT:
+    case ANY_NUMBER_OBJECT:
       value = Number(DecodeNumber(read));
       break;
-    case ANY_TYPES.STRING_OBJECT:
+    case ANY_STRING_OBJECT:
       value = String(DecodeString(read));
       break;
-    case ANY_TYPES.DATE:
+    case ANY_DATE:
       value = DecodeDate(read);
       break;
-    case ANY_TYPES.REGEXP:
+    case ANY_REGEXP:
       value = DecodeRegExp(read);
       break;
-    case ANY_TYPES.SHARED_ARRAY_BUFFER:
+    case ANY_SHARED_ARRAY_BUFFER:
       value = DecodeArrayBuffer(read);
       break;
-    case ANY_TYPES.ARRAY_BUFFER:
+    case ANY_ARRAY_BUFFER:
       value = DecodeArrayBuffer(read);
       break;
-    case ANY_TYPES.ARRAY_BUFFER_VIEW:
+    case ANY_ARRAY_BUFFER_VIEW:
       value = DecodeArrayBufferView(read);
       break;
-    case ANY_TYPES.MAP:
+    case ANY_MAP:
       value = DecodeMap(read, getPointer, memory, pointer);
       break;
-    case ANY_TYPES.SET:
+    case ANY_SET:
       value = DecodeSet(read, getPointer, memory, pointer);
       break;
-    case ANY_TYPES.ARRAY:
+    case ANY_ARRAY:
       value = DecodeArray(read, getPointer, memory, pointer);
       break;
-    case ANY_TYPES.OBJECT:
+    case ANY_OBJECT:
       value = DecodeObject(read, getPointer, memory, pointer);
       break;
-    case ANY_TYPES.POINTER:
+    case ANY_POINTER:
       const address: Pointer = DecodePointer(read);
       if (memory.has(address)) {
         return memory.get(address);
