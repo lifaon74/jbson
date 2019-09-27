@@ -6,7 +6,7 @@
 
 
 
-## JBSON ##
+# JBSON #
 
 This library provides tools to :
 - encode javascript values like `objects`, `Map`, `numbers`, `ArrayBuffer`, etc... into a sequence of bytes
@@ -49,7 +49,7 @@ Related:
 
 ## Usage ##
 
-#### Encoding ####
+### Encoding ###
 ```ts
 // WARN the returned Uint8Array is shared, use .slice() to clone its values
 function EncodeToJBSON<T>(value: T): Uint8Array;
@@ -63,7 +63,7 @@ obj.obj = obj;
 console.log(EncodeToJBSON(obj)); // output Uint8Array([17, 1, 4, 3, 111, 98, 106, 127, 0])
 ```
 
-#### Decoding ####
+### Decoding ###
 ```ts
 function DecodeFromJBSON<T>(buffer: Uint8Array): T;
 ```
@@ -74,7 +74,7 @@ function DecodeFromJBSON<T>(buffer: Uint8Array): T;
 console.log(DecodeFromJBSON(new Uint8Array([17, 1, 4, 3, 111, 98, 106, 127, 0]))); // output { obj: { obj: { ... } } }
 ```
 
-#### Cloning ####
+### Cloning ###
 ```ts
 function StructuredClone<T>(value: T): T;
 ```
@@ -115,7 +115,7 @@ The size is a variable length number, encoded in 7 bits every bytes, where the 8
 
 `[0b[<bit 7>: 1 if more bits are required to encode the number, <bit 6-0>: number bits (little endian)], ...repeat{0,}]`
 
-**Example: encoding `1234` (0b 0000 0100 1101 0010)**
+**Example:** encoding `1234` (0b 0000 0100 1101 0010)
 
 `[0b11010010, 0b00000100]`
 
@@ -227,7 +227,7 @@ They are stored like that:
 
 `[0b[<bit 7-0>: NUMBER_TYPES[type of the number]], ...number bits stored as big-endian{1-8}]`
 
-**Example: encoding `1234`**
+**Example:** encoding `1234`
 1) Inferred type: `NUMBER_TYPES.UINT16`
 2) Bytes: `[3 /* number type (uint16) */, 4 /* high byte of the number */, 210 /* low byte of the number */]` = `[3, 4, 210]`
 
@@ -267,7 +267,7 @@ Strings are converted into and utf8 encoded Uint8Array, then the array [length](
 
 `[...size of the string{1,}, ...content of the string{0,}]`
 
-**Example: encoding `'abc'`**
+**Example:** encoding `'abc'`
 
 `[3 /* string's length */, 97 /* 'a' */, 98 /* 'b' */, 99 /* 'c' */]` =  `[3, 97, 98, 99]`
 
@@ -303,7 +303,7 @@ export function DecodeString(read: ReadFunction): string {
 
 BigInts are simply stored as if they where [size](#size)
 
-**Example: encoding `1234n`**
+**Example:** encoding `1234n`
 
 `[210, 9]`
 
@@ -332,7 +332,7 @@ Dates are stored as [number](#number) (timestamp in milliseconds) using `EncodeN
 
 `[...timestamp of the date in milliseconds encoded as number{2,9}]`
 
-**Example: encoding `new Date('04 Dec 1995 00:12:00 GMT')`**
+**Example:** encoding `new Date('04 Dec 1995 00:12:00 GMT')`
 
 `[7 /* number type (uint64) */, 0, 0, 0, 190, 118, 189, 140, 128 /* ... number bits */]` =  `[7, 0, 0, 0, 190, 118, 189, 140, 128]`
 
@@ -361,7 +361,7 @@ RegExps are stored as a tuple of [string](#string) composed of the source and th
 
 `[...regexp.source encoded as string{1,}, ...regexp.flags encoded as string{1,}]`
 
-**Example: encoding `new RegExp(/abc/g)`**
+**Example:** encoding `new RegExp(/abc/g)`
 
 `[3 /* regex.source's length */, 97, 98, 99 /* ... 'abc' */, 1 /* regex.flags' length */, 103 /* 'g' */]` = `[3, 97, 98, 99, 1, 103]`
 
@@ -391,7 +391,7 @@ ArrayBuffers are stored as a tuple composed of its [size](#size) and its content
 
 `[...size of the buffer{1,}, ...buffer bytes{0,}]`
 
-**Example: encoding `new Uint8Array([0, 1, 2]).buffer`**
+**Example:** encoding `new Uint8Array([0, 1, 2]).buffer`
 
 `[3 /* buffer's size */, 0, 1, 2 /* ... buffer's content */]` = `[3, 0, 1, 2]`
 
@@ -428,7 +428,7 @@ ArrayBufferView (Uint8Array, Uint16Array, ...) are stored as a tuple composed of
 
 `[buffer type {1}, ...buffer size and bytes{1,}]`
 
-**Example: encoding `new Uint8Array([0, 1, 2])`**
+**Example:** encoding `new Uint8Array([0, 1, 2])`
 
 `[1 /* buffer's type (uint8) */, 3 /* buffer's size */, 0, 1, 2 /* ... buffer's content */]` =  `[1, 3, 0, 1, 2]`
 
@@ -458,7 +458,7 @@ Maps are stored as:
 
 `[map entries' size {1,}, ...for each entries: tuple<EncodeAny(key), EncodeAny(value)>]`
 
-**Example: encoding `new Map([['a', 1]])`**
+**Example:** encoding `new Map([['a', 1]])`
 
 ```ts
 [
@@ -525,7 +525,7 @@ Sets are stored as:
 
 `[set values' size {1,}, ...for each values: EncodeAny(value)]`
 
-**Example: encoding `new Set(['a', 1])`**
+**Example:** encoding `new Set(['a', 1])`
 
 ```ts
 [
@@ -587,7 +587,7 @@ export function DecodeSet(
 
 Arrays are stored exactly as [Set](#set)
 
-**Example: encoding `['a', 1]`**
+**Example:** encoding `['a', 1]`
 
 ```ts
 [
@@ -649,7 +649,7 @@ export function DecodeArray(
 
 Objects are stored exactly as [Map](#map)
 
-**Example: encoding `{ a: 1 }`**
+**Example:** encoding `{ a: 1 }`
 
 ```ts
 [
@@ -717,14 +717,14 @@ export function DecodeObject(
 export type Pointer = number;
 export type GetPointerFunction = () => Pointer;
 ```
-Some structures may include some circular or shared references like: `const obj = {}; obj.obj = obj;`
+Some structures may include circular or shared references like: `const obj = {}; obj.obj = obj;`
 
 JBSON supports such conditions by creating a `Pointer` which is nothing more than the index where is reference as been encoded.
 
 Pointers are stored as [size](#size)
 
 
-**Example: full encoding of `const obj = {}; obj.obj = obj;`**
+**Example:** full encoding of `const obj = {}; obj.obj = obj;`
 
 ```ts
 [
