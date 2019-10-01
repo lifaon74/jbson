@@ -1,6 +1,45 @@
 export type Pointer = number;
 export type GetPointerFunction = () => Pointer;
 
+export interface EncodingContext {
+  getPointer: GetPointerFunction;
+  memory: Map<any, Pointer>;
+  transferable: Transferable[];
+}
+
+export interface DecodingContext {
+  getPointer: GetPointerFunction;
+  memory: Map<Pointer, any>;
+  transferable: Transferable[];
+}
+
+export function CreateEncodingContext(
+  getPointer: GetPointerFunction,
+  memory: Map<any, Pointer> = new Map<any, Pointer>(),
+  transferable?: Iterable<Transferable>,
+): EncodingContext {
+  return {
+    getPointer,
+    memory,
+    transferable: (transferable === void 0) ? [] : Array.from(transferable)
+  };
+}
+
+export function CreateDecodingContext(
+  getPointer: GetPointerFunction,
+  memory: Map<Pointer, any> = new Map<Pointer, any>(),
+  transferable?: Iterable<Transferable>,
+): DecodingContext {
+  return {
+    getPointer,
+    memory,
+    transferable: (transferable === void 0) ? [] : Array.from(transferable)
+  };
+}
+
+/*---------------------*/
+
+
 export const ANY_UNDEFINED = 0x00;
 export const ANY_NULL = 0x01;
 export const ANY_BOOLEAN = 0x02;
@@ -21,29 +60,30 @@ export const ANY_ARRAY = 0x10;
 export const ANY_OBJECT = 0x11;
 export const ANY_BIGINT = 0x12;
 export const ANY_POINTER = 0x7f;
+export const TRANSFERABLE = 0x7e;
 
-export type TAny =
-  typeof ANY_UNDEFINED
-  | typeof ANY_NULL
-  | typeof ANY_BOOLEAN
-  | typeof ANY_NUMBER
-  | typeof ANY_STRING
-  | typeof ANY_SYMBOL
-  | typeof ANY_BOOLEAN_OBJECT
-  | typeof ANY_NUMBER_OBJECT
-  | typeof ANY_STRING_OBJECT
-  | typeof ANY_DATE
-  | typeof ANY_REGEXP
-  | typeof ANY_SHARED_ARRAY_BUFFER
-  | typeof ANY_ARRAY_BUFFER
-  | typeof ANY_ARRAY_BUFFER_VIEW
-  | typeof ANY_MAP
-  | typeof ANY_SET
-  | typeof ANY_ARRAY
-  | typeof ANY_OBJECT
-  | typeof ANY_BIGINT
-  | typeof ANY_POINTER
-;
+// export type TAny =
+//   typeof ANY_UNDEFINED
+//   | typeof ANY_NULL
+//   | typeof ANY_BOOLEAN
+//   | typeof ANY_NUMBER
+//   | typeof ANY_STRING
+//   | typeof ANY_SYMBOL
+//   | typeof ANY_BOOLEAN_OBJECT
+//   | typeof ANY_NUMBER_OBJECT
+//   | typeof ANY_STRING_OBJECT
+//   | typeof ANY_DATE
+//   | typeof ANY_REGEXP
+//   | typeof ANY_SHARED_ARRAY_BUFFER
+//   | typeof ANY_ARRAY_BUFFER
+//   | typeof ANY_ARRAY_BUFFER_VIEW
+//   | typeof ANY_MAP
+//   | typeof ANY_SET
+//   | typeof ANY_ARRAY
+//   | typeof ANY_OBJECT
+//   | typeof ANY_BIGINT
+//   | typeof ANY_POINTER
+// ;
 
 
 export function IsPlainObject(value: any): boolean {

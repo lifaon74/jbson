@@ -5,8 +5,12 @@ import {
 import {
   ANY_ARRAY, ANY_ARRAY_BUFFER, ANY_ARRAY_BUFFER_VIEW, ANY_BIGINT, ANY_BOOLEAN, ANY_BOOLEAN_OBJECT, ANY_DATE, ANY_MAP,
   ANY_NULL, ANY_NUMBER, ANY_NUMBER_OBJECT, ANY_OBJECT, ANY_POINTER, ANY_REGEXP, ANY_SET, ANY_SHARED_ARRAY_BUFFER,
-  ANY_STRING, ANY_STRING_OBJECT, ANY_UNDEFINED, GetPointerFunction, IsPlainObject, Pointer, tempUint8Array, textDecoder,
-  textEncoder
+  ANY_STRING, ANY_STRING_OBJECT, ANY_UNDEFINED, CreateDecodingContext, CreateEncodingContext, DecodingContext,
+  EncodingContext,
+  IsPlainObject,
+  Pointer,
+  tempUint8Array, textDecoder,
+  textEncoder, TRANSFERABLE
 } from '../helpers';
 
 
@@ -267,31 +271,29 @@ export function DecodeArrayBufferView(read: ReadFunction): ArrayBufferView {
 export function EncodeMap(
   map: Map<any, any>,
   write: WriteFunction,
-  getPointer: GetPointerFunction,
-  memory: Map<any, Pointer> = new Map<any, Pointer>()
+  context: EncodingContext,
 ): void {
   EncodeSize(map.size, write);
 
   const iterator: Iterator<[any, any]> = map.entries();
   let result: IteratorResult<[any, any]>;
   while (!(result = iterator.next()).done) {
-    EncodeAny(result.value[0], write, getPointer, memory);
-    EncodeAny(result.value[1], write, getPointer, memory);
+    EncodeAny(result.value[0], write, context);
+    EncodeAny(result.value[1], write, context);
   }
 }
 
 export function DecodeMap(
   read: ReadFunction,
-  getPointer: GetPointerFunction,
-  memory: Map<Pointer, any> = new Map<Pointer, any>(),
-  pointer: Pointer = getPointer()
+  context: DecodingContext,
+  pointer: Pointer = context.getPointer(),
 ): Map<any, any> {
   const size: number = DecodeSize(read);
   const map: Map<any, any> = new Map<any, any>();
-  memory.set(pointer, map);
+  context.memory.set(pointer, map);
   for (let i = 0; i < size; i++) {
-    const key: any = DecodeAny(read, getPointer, memory);
-    const value: any = DecodeAny(read, getPointer, memory);
+    const key: any = DecodeAny(read, context);
+    const value: any = DecodeAny(read, context);
     map.set(key, value);
   }
   return map;
@@ -304,29 +306,27 @@ export function DecodeMap(
 export function EncodeSet(
   set: Set<any>,
   write: WriteFunction,
-  getPointer: GetPointerFunction,
-  memory: Map<any, Pointer> = new Map<any, Pointer>()
+  context: EncodingContext,
 ): void {
   EncodeSize(set.size, write);
 
   const iterator: Iterator<any> = set.values();
   let result: IteratorResult<any>;
   while (!(result = iterator.next()).done) {
-    EncodeAny(result.value, write, getPointer, memory);
+    EncodeAny(result.value, write, context);
   }
 }
 
 export function DecodeSet(
   read: ReadFunction,
-  getPointer: GetPointerFunction,
-  memory: Map<Pointer, any> = new Map<Pointer, any>(),
-  pointer: Pointer = getPointer()
+  context: DecodingContext,
+  pointer: Pointer = context.getPointer(),
 ): Set<any> {
   const size: number = DecodeSize(read);
   const set: Set<any> = new Set<any>();
-  memory.set(pointer, set);
+  context.memory.set(pointer, set);
   for (let i = 0; i < size; i++) {
-    set.add(DecodeAny(read, getPointer, memory));
+    set.add(DecodeAny(read, context));
   }
   return set;
 }
@@ -338,27 +338,25 @@ export function DecodeSet(
 export function EncodeArray(
   array: any[],
   write: WriteFunction,
-  getPointer: GetPointerFunction,
-  memory: Map<any, Pointer> = new Map<any, Pointer>()
+  context: EncodingContext,
 ): void {
   EncodeSize(array.length, write);
 
   for (let i = 0, l = array.length; i < l; i++) {
-    EncodeAny(array[i], write, getPointer, memory);
+    EncodeAny(array[i], write, context);
   }
 }
 
 export function DecodeArray(
   read: ReadFunction,
-  getPointer: GetPointerFunction,
-  memory: Map<Pointer, any> = new Map<Pointer, any>(),
-  pointer: Pointer = getPointer()
+  context: DecodingContext,
+  pointer: Pointer = context.getPointer(),
 ): any[] {
   const size: number = DecodeSize(read);
   const array: any[] = new Array<any>(size);
-  memory.set(pointer, array);
+  context.memory.set(pointer, array);
   for (let i = 0; i < size; i++) {
-    array[i] = DecodeAny(read, getPointer, memory);
+    array[i] = DecodeAny(read, context);
   }
   return array;
 }
@@ -370,30 +368,28 @@ export function DecodeArray(
 export function EncodeObject(
   object: any,
   write: WriteFunction,
-  getPointer: GetPointerFunction,
-  memory: Map<any, Pointer> = new Map<any, Pointer>()
+  context: EncodingContext,
 ): void {
   const entries: [any, any][] = Object.entries(object);
   EncodeSize(entries.length, write);
 
   for (let i = 0, l = entries.length; i < l; i++) {
-    EncodeAny(entries[i][0], write, getPointer, memory);
-    EncodeAny(entries[i][1], write, getPointer, memory);
+    EncodeAny(entries[i][0], write, context);
+    EncodeAny(entries[i][1], write, context);
   }
 }
 
 export function DecodeObject(
   read: ReadFunction,
-  getPointer: GetPointerFunction,
-  memory: Map<Pointer, any> = new Map<Pointer, any>(),
-  pointer: Pointer = getPointer()
+  context: DecodingContext,
+  pointer: Pointer = context.getPointer(),
 ): object {
   const size: number = DecodeSize(read);
   const object: any = {};
-  memory.set(pointer, object);
+  context.memory.set(pointer, object);
   for (let i = 0; i < size; i++) {
-    const key: any = DecodeAny(read, getPointer, memory);
-    object[key] = DecodeAny(read, getPointer, memory);
+    const key: any = DecodeAny(read, context);
+    object[key] = DecodeAny(read, context);
   }
   return object;
 }
@@ -412,20 +408,35 @@ export function DecodePointer(read: ReadFunction): Pointer {
 
 
 /**
+ * TRANSFERABLE
+ */
+export function EncodeTransferable(transferableIndex: number, write: WriteFunction): void {
+  return EncodeSize(transferableIndex, write);
+}
+
+export function DecodeTransferable(read: ReadFunction): number {
+  return DecodeSize(read);
+}
+
+
+/**
  * ANY
  */
 export function EncodeAny(
   value: any,
   write: WriteFunction,
-  getPointer: GetPointerFunction,
-  memory: Map<any, Pointer> = new Map<any, Pointer>()
+  context: EncodingContext,
 ): void {
-  if (memory.has(value)) {
+  let index: number;
+  if ((index = context.transferable.indexOf(value)) >= 0) {
+    write(TRANSFERABLE);
+    EncodeTransferable(index, write);
+  } else if (context.memory.has(value)) {
     write(ANY_POINTER);
-    EncodePointer(memory.get(value) as Pointer, write);
+    EncodePointer(context.memory.get(value) as Pointer, write);
   } else {
     if ((value !== null) && (value !== void 0) && (typeof value.toJBSON === 'function')) {
-      EncodeAny(value.toJBSON(), write, getPointer, memory);
+      EncodeAny(value.toJBSON(), write, context);
     } else {
       const type: string = typeof value;
 
@@ -456,7 +467,7 @@ export function EncodeAny(
         EncodeBigInt(value, write);
 
       } else if (type === 'object') {
-        memory.set(value, getPointer()); // p6 & p23
+        context.memory.set(value, context.getPointer()); // p6 & p23
 
         if (value instanceof Boolean) { // p7
           write(ANY_BOOLEAN_OBJECT);
@@ -493,19 +504,19 @@ export function EncodeAny(
 
         } else if (value instanceof Map) { // p14
           write(ANY_MAP);
-          EncodeMap(value, write, getPointer, memory);
+          EncodeMap(value, write, context);
 
         } else if (value instanceof Set) { // p15
           write(ANY_SET);
-          EncodeSet(value, write, getPointer, memory);
+          EncodeSet(value, write, context);
 
         } else if (Array.isArray(value)) { // p16
           write(ANY_ARRAY);
-          EncodeArray(value, write, getPointer, memory);
+          EncodeArray(value, write, context);
 
         } else if (!IsPlainObject(value)) { // p18
           if (typeof value.toJSON === 'function') {
-            EncodeAny(value.toJSON(), write, getPointer, memory);
+            EncodeAny(value.toJSON(), write, context);
           } else {
             // INFO super hard to implement
             let string: string = String(value);
@@ -517,7 +528,7 @@ export function EncodeAny(
           }
         } else {
           write(ANY_OBJECT);
-          EncodeObject(value, write, getPointer, memory);
+          EncodeObject(value, write, context);
         }
       } else {
         throw new TypeError(`Unsupported type : ${ type }`);
@@ -528,11 +539,10 @@ export function EncodeAny(
 
 export function DecodeAny(
   read: ReadFunction,
-  getPointer: GetPointerFunction,
-  memory: Map<Pointer, any> = new Map<Pointer, any>()
+  context: DecodingContext,
 ): any {
 
-  const pointer: Pointer = getPointer();
+  const pointer: Pointer = context.getPointer();
   const type: number = read();
   let value: any;
   switch (type) {
@@ -575,29 +585,39 @@ export function DecodeAny(
       value = DecodeArrayBufferView(read);
       break;
     case ANY_MAP:
-      value = DecodeMap(read, getPointer, memory, pointer);
+      value = DecodeMap(read, context, pointer);
       break;
     case ANY_SET:
-      value = DecodeSet(read, getPointer, memory, pointer);
+      value = DecodeSet(read, context, pointer);
       break;
     case ANY_ARRAY:
-      value = DecodeArray(read, getPointer, memory, pointer);
+      value = DecodeArray(read, context, pointer);
       break;
     case ANY_OBJECT:
-      value = DecodeObject(read, getPointer, memory, pointer);
+      value = DecodeObject(read, context, pointer);
       break;
+
     case ANY_POINTER:
       const address: Pointer = DecodePointer(read);
-      if (memory.has(address)) {
-        return memory.get(address);
+      if (context.memory.has(address)) {
+        return context.memory.get(address);
       } else {
         throw new TypeError(`Find a pointer without valid pointed value`);
       }
+
+    case TRANSFERABLE:
+      const index: number = DecodeTransferable(read);
+      if (index < context.transferable.length) {
+        return context.transferable[index];
+      } else {
+        throw new TypeError(`Find a transferable index out of bounds of the context.transferable list`);
+      }
+
     default:
       throw new TypeError(`Invalid type found : ${ type }`);
   }
 
-  memory.set(pointer, value);
+  context.memory.set(pointer, value);
 
   return value;
 }
@@ -608,10 +628,10 @@ export function DecodeAny(
  */
 export function StructuredClone<T>(value: T): T {
   const writeBuffer = new WriteBuffer();
-  EncodeAny(value, writeBuffer.write.bind(writeBuffer), () => writeBuffer.length);
+  EncodeAny(value, writeBuffer.write.bind(writeBuffer), CreateEncodingContext(() => writeBuffer.length));
 
   const readBuffer = new ReadBuffer(writeBuffer.buffer);
-  return DecodeAny(readBuffer.read.bind(readBuffer), () => readBuffer.index);
+  return DecodeAny(readBuffer.read.bind(readBuffer), CreateDecodingContext(() => readBuffer.index));
 }
 
 
@@ -622,13 +642,13 @@ export function StructuredClone<T>(value: T): T {
 /**
  * WARN: returned buffer is not cloned so data max vary if not sliced
  */
-export function EncodeToJBSON<T>(value: T): Uint8Array {
+export function EncodeToJBSON<T>(value: T, transferable?: Transferable[]): Uint8Array {
   const writeBuffer = new WriteBuffer();
-  EncodeAny(value, writeBuffer.write.bind(writeBuffer), () => writeBuffer.length);
+  EncodeAny(value, writeBuffer.write.bind(writeBuffer), CreateEncodingContext(() => writeBuffer.length, void 0, transferable));
   return writeBuffer.buffer;
 }
 
-export function DecodeFromJBSON<T>(buffer: Uint8Array): T {
+export function DecodeFromJBSON<T>(buffer: Uint8Array, transferable?: Transferable[]): T {
   const readBuffer = new ReadBuffer(buffer);
-  return DecodeAny(readBuffer.read.bind(readBuffer), () => readBuffer.index);
+  return DecodeAny(readBuffer.read.bind(readBuffer), CreateDecodingContext(() => readBuffer.index, void 0, transferable));
 }

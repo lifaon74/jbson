@@ -6,4 +6,8 @@ export async function test() {
   // const obj: any = {};
   // obj.obj = obj;
   // console.log(EncodeToJBSON(obj));
+
+  // const obj: any = {};
+  // obj.obj = new Uint8Array([100]);
+  // console.log(DecodeFromJBSON(EncodeToJBSON(obj, [obj.obj]), [obj.obj]));
 }
