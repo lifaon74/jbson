@@ -9,6 +9,10 @@ export const NUMBER_TYPES_INT64 = 0x06;
 export const NUMBER_TYPES_UINT64 = 0x07;
 export const NUMBER_TYPES_FLOAT32 = 0x08;
 export const NUMBER_TYPES_FLOAT64 = 0x09;
+// reserved
+export const NUMBER_TYPES_INT128 = 0x0a;
+export const NUMBER_TYPES_UINT128 = 0x0b;
+export const NUMBER_TYPES_FLOAT128 = 0x0c;
 
 export type TNumberType =
    typeof NUMBER_TYPES_INT8

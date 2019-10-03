@@ -8,6 +8,8 @@
 
 # JBSON #
 
+Javascript Binary Structured Object Notation
+
 This library provides tools to :
 - encode javascript values like `objects`, `Map`, `numbers`, `ArrayBuffer`, etc... into a sequence of bytes
 - decode JBSON bytes' sequence into js values

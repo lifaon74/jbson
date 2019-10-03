@@ -427,10 +427,9 @@ export function EncodeAny(
   write: WriteFunction,
   context: EncodingContext,
 ): void {
-  let index: number;
-  if ((index = context.transferable.indexOf(value)) >= 0) {
+  if (context.transferable.has(value)) {
     write(TRANSFERABLE);
-    EncodeTransferable(index, write);
+    EncodeTransferable(context.transferable.get(value) as number, write);
   } else if (context.memory.has(value)) {
     write(ANY_POINTER);
     EncodePointer(context.memory.get(value) as Pointer, write);
@@ -607,8 +606,8 @@ export function DecodeAny(
 
     case TRANSFERABLE:
       const index: number = DecodeTransferable(read);
-      if (index < context.transferable.length) {
-        return context.transferable[index];
+      if (context.transferable.has(index)) {
+        return context.transferable.get(index);
       } else {
         throw new TypeError(`Find a transferable index out of bounds of the context.transferable list`);
       }

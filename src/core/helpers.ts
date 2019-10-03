@@ -4,13 +4,13 @@ export type GetPointerFunction = () => Pointer;
 export interface EncodingContext {
   getPointer: GetPointerFunction;
   memory: Map<any, Pointer>;
-  transferable: Transferable[];
+  transferable: Map<Transferable, number>;
 }
 
 export interface DecodingContext {
   getPointer: GetPointerFunction;
   memory: Map<Pointer, any>;
-  transferable: Transferable[];
+  transferable: Map<number, Transferable>;
 }
 
 export function CreateEncodingContext(
@@ -21,7 +21,14 @@ export function CreateEncodingContext(
   return {
     getPointer,
     memory,
-    transferable: (transferable === void 0) ? [] : Array.from(transferable)
+    // transferable: (transferable === void 0) ? [] : Array.from(transferable)
+    transferable: new Map<Transferable, number>(
+      (transferable === void 0)
+        ? []
+        : Array.from(transferable, (transferable: Transferable, index: number) => {
+          return [transferable, index];
+        })
+    )
   };
 }
 
@@ -33,7 +40,14 @@ export function CreateDecodingContext(
   return {
     getPointer,
     memory,
-    transferable: (transferable === void 0) ? [] : Array.from(transferable)
+    // transferable: (transferable === void 0) ? [] : Array.from(transferable)
+    transferable: new Map<number, Transferable>(
+      (transferable === void 0)
+        ? []
+        : Array.from(transferable, (transferable: Transferable, index: number) => {
+          return [index, transferable];
+        })
+    )
   };
 }
 
