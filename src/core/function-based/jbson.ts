@@ -625,12 +625,12 @@ export function DecodeAny(
 /**
  * CLONE
  */
-export function StructuredClone<T>(value: T): T {
+export function StructuredClone<T>(value: T, transferable?: Transferable[]): T {
   const writeBuffer = new WriteBuffer();
-  EncodeAny(value, writeBuffer.write.bind(writeBuffer), CreateEncodingContext(() => writeBuffer.length));
+  EncodeAny(value, writeBuffer.write.bind(writeBuffer), CreateEncodingContext(() => writeBuffer.length, void 0, transferable));
 
   const readBuffer = new ReadBuffer(writeBuffer.buffer);
-  return DecodeAny(readBuffer.read.bind(readBuffer), CreateDecodingContext(() => readBuffer.index));
+  return DecodeAny(readBuffer.read.bind(readBuffer), CreateDecodingContext(() => readBuffer.index, void 0, transferable));
 }
 
 
