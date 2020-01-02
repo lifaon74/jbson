@@ -1,6 +1,6 @@
 {
   "name": "@lifaon/jbson",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Encodes and decodes complex javascript objects and types. May be used to transmit or clone objects",
   "main": "index.js",
   "scripts": {
@@ -74,9 +74,6 @@
   "access": "public",
   "__devDependencies": {
     "google-closure-compiler-js": "20170218.0.0"
-  },
-  "peerDependencies": {
-    "rxjs": "^6.5.3"
   },
   "devDependencies": {
     "@types/node": "latest",
