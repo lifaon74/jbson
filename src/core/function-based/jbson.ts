@@ -128,6 +128,34 @@ export function DecodeBigSize(read: ReadFunction): bigint {
   return size;
 }
 
+/**
+ * BYTES
+ */
+export function EncodeBytes(bytes: Uint8Array, write: WriteFunction): void {
+  EncodeSize(bytes.length, write);
+  for (let i = 0, l = bytes.length; i < l; i++) {
+    write(bytes[i]);
+  }
+}
+
+const DECODE_BYTES_TEMP_UINT8_ARRAY = new Uint8Array(1e6);
+
+export function DecodeBytes(read: ReadFunction, safeToUseTempBuffer: boolean = false): Uint8Array {
+  const size: number = DecodeSize(read);
+
+  const bytes: Uint8Array = ((size < DECODE_BYTES_TEMP_UINT8_ARRAY.length) && safeToUseTempBuffer)
+    ? DECODE_BYTES_TEMP_UINT8_ARRAY
+    : new Uint8Array(size);
+
+  for (let i = 0; i < size; i++) {
+    bytes[i] = read();
+  }
+
+  return (bytes.length > size)
+    ? bytes.subarray(0, size)
+    : bytes;
+}
+
 
 /**
  * BOOLEAN
@@ -169,29 +197,12 @@ export function DecodeNumber(read: ReadFunction): number {
  */
 
 export function EncodeString(string: string, write: WriteFunction): void {
-  const bytes: Uint8Array = textEncoder.encode(string);
-  EncodeSize(bytes.length, write);
-  for (let i = 0, l = bytes.length; i < l; i++) {
-    write(bytes[i]);
-  }
+  EncodeBytes(textEncoder.encode(string), write);
 }
 
 export function DecodeString(read: ReadFunction): string {
-  const size: number = DecodeSize(read);
-  const bytes: Uint8Array = (size < tempUint8Array.length) ? tempUint8Array : new Uint8Array(size);
-  for (let i = 0; i < size; i++) {
-    bytes[i] = read();
-  }
-  return textDecoder.decode(bytes.subarray(0, size));
+  return textDecoder.decode(DecodeBytes(read, true));
 }
-
-// export function DecodeString(read: ReadFunction): string {
-//   const bytes: Uint8Array = new Uint8Array(DecodeSize(read));
-//   for (let i = 0, l = bytes.length; i < l; i++) {
-//     bytes[i] = read();
-//   }
-//   return textDecoder.decode(bytes);
-// }
 
 
 /**
@@ -236,19 +247,11 @@ export function DecodeRegExp(read: ReadFunction): RegExp {
  * ARRAY BUFFER
  */
 export function EncodeArrayBuffer(buffer: ArrayBuffer | SharedArrayBuffer, write: WriteFunction, byteOffset: number = 0, byteLength: number = buffer.byteLength): void {
-  EncodeSize(byteLength, write);
-  const bytes: Uint8Array = new Uint8Array(buffer, byteOffset, byteLength);
-  for (let i = 0, l = bytes.length; i < l; i++) {
-    write(bytes[i]);
-  }
+  EncodeBytes(new Uint8Array(buffer, byteOffset, byteLength), write);
 }
 
 export function DecodeArrayBuffer(read: ReadFunction): ArrayBuffer {
-  const bytes: Uint8Array = new Uint8Array(DecodeSize(read));
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = read();
-  }
-  return bytes.buffer;
+  return DecodeBytes(read, false).buffer;
 }
 
 
@@ -639,7 +642,7 @@ export function StructuredClone<T>(value: T, transferable?: Transferable[]): T {
  */
 
 /**
- * WARN: returned buffer is not cloned so data max vary if not sliced
+ * WARN: returned buffer is not cloned so data may vary if not sliced
  */
 export function EncodeToJBSON<T>(value: T, transferable?: Transferable[]): Uint8Array {
   const writeBuffer = new WriteBuffer();

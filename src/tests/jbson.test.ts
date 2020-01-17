@@ -531,7 +531,7 @@ function testCompressionRatio(value: any, name: string = ''): void {
 }
 
 function testSizePerformance() {
-  testCompressionRatio(new Array(1e4).fill(1), 'uint8 array');
+  testCompressionRatio(new Array(1e4).fill(1), 'array of uint8 numbers');
   testCompressionRatio(new Uint8Array(1e4).fill(1), 'typed uint8 array');
   testCompressionRatio(new Array(1e4).fill(1.23456789123456789), 'float array');
   testCompressionRatio(new Array(1e4).fill(true), 'boolean array');

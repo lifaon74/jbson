@@ -265,7 +265,7 @@ export function DecodeNumber(read: ReadFunction): number {
 
 #### String ####
 
-Strings are converted into and utf8 encoded Uint8Array, then the array [length](#size) is encoded using `EncodeSize` and finally the content is written just after.
+Strings are converted into an utf8 encoded Uint8Array, then the array [length](#size) is encoded using `EncodeSize` and finally the content is written just after.
 
 `[...size of the string{1,}, ...content of the string{0,}]`
 
